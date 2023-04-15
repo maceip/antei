@@ -20,6 +20,8 @@ import {
   pollRequestUntilTerminalState,
 } from '@/lib/relay';
 import { useRouter } from 'next/router';
+import { providers } from "ethers";
+import { Aggregator, BlsWalletWrapper, getConfig } from "bls-wallet-clients";
 
 
 
@@ -248,10 +250,10 @@ useEffect(() => {
   return (
     <Layout>
       <Head>
-        <title>Next.js</title>
+        <title>Eth Tokto</title>
         <meta
           name="description"
-          content="Next.js template for building apps with Radix UI and Tailwind CSS"
+          content="auto liquidity for all your wallets and chains"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
@@ -281,11 +283,119 @@ useEffect(() => {
             rel="noreferrer"
             href={siteConfig.links.github}
             className={buttonVariants({ variant: "outline", size: "lg" })}
+            onClick={console.log()}
           >
             GitHub
           </Link>
         </div>
       </section>
+      {view === Views.ERROR && (
+          <>
+            <h1>Error</h1>
+            <p>{error.message}</p>
+            <button
+              onClick={() => {
+                if (sessionSigs) {
+                  setView(Views.SESSION_CREATED);
+                } else {
+                  if (googleIdToken) {
+                    setView(Views.FETCHED);
+                  } else {
+                    setView(Views.SIGN_IN);
+                  }
+                }
+                setError(null);
+              }}
+            >
+              Got it
+            </button>
+          </>
+        )}
+        {view === Views.SIGN_IN && (
+          <>
+{/*handle not authed*/}
+          </>
+        )}
+        {view === Views.HANDLE_REDIRECT && (
+          <>
+            <h1>Verifying your identity...</h1>
+          </>
+        )}
+        {view === Views.FETCHING && (
+          <>
+            <h1>Fetching your PKPs...</h1>
+          </>
+        )}
+        {view === Views.FETCHED && (
+          <>
+            {pkps.length > 0 ? (
+              <>
+                <h1>Select a PKP to continue</h1>
+                {/* Select a PKP to create session sigs for */}
+                <div>
+                  {pkps.map(pkp => (
+                    <button
+                      key={pkp.ethAddress}
+                      onClick={async () => await createSession(pkp)}
+                    >
+                      {pkp.ethAddress}
+                    </button>
+                  ))}
+                </div>
+                <hr></hr>
+                {/* Or mint another PKP */}
+                <p>or mint another one:</p>
+                <button onClick={mint}>Mint another PKP</button>
+              </>
+            ) : (
+              <>
+                <h1>Mint a PKP to continue</h1>
+                <button onClick={mint}>Mint a PKP</button>
+              </>
+            )}
+          </>
+        )}
+        {view === Views.MINTING && (
+          <>
+            <h1>Minting your PKP...</h1>
+          </>
+        )}
+        {view === Views.MINTED && (
+          <>
+            <h1>Minted!</h1>
+          </>
+        )}
+        {view === Views.CREATING_SESSION && (
+          <>
+            <h1>Saving your session...</h1>
+          </>
+        )}
+        {view === Views.SESSION_CREATED && (
+          <>
+            <h1>Ready for the open web</h1>
+            <div>
+              <p>Check out your PKP:</p>
+              <p>{currentPKP.ethAddress}</p>
+            </div>
+            <hr></hr>
+            <div>
+              <p>Sign this message with your PKP:</p>
+              <p>{message}</p>
+              <button onClick={signMessage}>Sign message</button>
+
+              {signature && (
+                <>
+                  <h3>Your signature:</h3>
+                  <p>{signature}</p>
+                  <h3>Recovered address:</h3>
+                  <p>{recoveredAddress}</p>
+                  <h3>Verified:</h3>
+                  <p>{verified ? 'true' : 'false'}</p>
+                </>
+              )}
+            </div>
+          </>
+        )}
     </Layout>
   )
 }

@@ -3,7 +3,6 @@ lockfileVersion: 5.4
 specifiers:
   '@ianvs/prettier-plugin-sort-imports': ^3.7.1
   '@lit-protocol/lit-node-client': ^2.1.118
-  '@next/font': ^13.1.6
   '@radix-ui/react-accessible-icon': ^1.0.1
   '@radix-ui/react-accordion': ^1.1.0
   '@radix-ui/react-alert-dialog': ^1.0.2
@@ -61,7 +60,6 @@ specifiers:
 
 dependencies:
   '@lit-protocol/lit-node-client': 2.1.123_react@18.2.0
-  '@next/font': 13.3.0
   '@radix-ui/react-accessible-icon': 1.0.1_biqbaboplfbrettd7655fr4n2y
   '@radix-ui/react-accordion': 1.1.0_biqbaboplfbrettd7655fr4n2y
   '@radix-ui/react-alert-dialog': 1.0.2_5ndqzdd6t4rivxsukjv3i3ak2q
@@ -1116,10 +1114,6 @@ packages:
     dependencies:
       glob: 7.1.7
     dev: true
-
-  /@next/font/13.3.0:
-    resolution: {integrity: sha512-xUv7VRUA2Zr6n/KJDILyv7/zGy9xKUsyQURaQqYr7lVxn0REScazwyZQzhSm+DnJoUyo+9DcFs2J3WsZXHUvQw==}
-    dev: false
 
   /@next/swc-darwin-arm64/13.3.0:
     resolution: {integrity: sha512-DmIQCNq6JtccLPPBzf0dgh2vzMWt5wjxbP71pCi5EWpWYE3MsP6FcRXi4MlAmFNDQOfcFXR2r7kBeG1LpZUh1w==}
