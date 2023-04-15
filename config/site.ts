@@ -14,7 +14,7 @@ interface SiteConfig {
 export const siteConfig: SiteConfig = {
   name: "安定",
   description:
-    "Beautifully designed components built with Radix UI and Tailwind CSS.",
+    "Unlocking Liquidity!",
   mainNav: [
     {
       title: "Home",
@@ -22,8 +22,8 @@ export const siteConfig: SiteConfig = {
     },
   ],
   links: {
-    twitter: "https://twitter.com/shadcn",
-    github: "https://github.com/shadcn/ui",
-    docs: "https://ui.shadcn.com",
+    twitter: "https://twitter.com/maceip",
+    github: "https://github.com/maceip/antei",
+    docs: "https://github.com/maceip/antei/tree/master/contracs",
   },
 }

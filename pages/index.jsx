@@ -22,6 +22,18 @@ import {
 import { useRouter } from 'next/router';
 import { providers } from "ethers";
 import { Aggregator, BlsWalletWrapper, getConfig } from "bls-wallet-clients";
+import {
+  UiPoolDataProvider,
+  UiIncentiveDataProvider,
+  ChainId,
+  GhoService,
+} from '@aave/contract-helpers';
+import {
+  formatGhoReserveData,
+  formatGhoUserData,
+  formatReservesAndIncentives,
+  formatUserSummaryAndIncentives,
+} from '@aave/math-utils';
 
 
 
@@ -56,6 +68,117 @@ const [signature, setSignature] = useState(null);
 const [recoveredAddress, setRecoveredAddress] = useState(null);
 const [verified, setVerified] = useState(false);
 
+
+
+// Sample RPC address for querying ETH goerli
+const provider = new ethers.providers.JsonRpcProvider(
+  'https://eth-goerli.public.blastapi.io',
+);
+
+// User address to fetch data for, insert address here
+const currentAccount = '0x464C71f6c2F760DdA6093dCB91C24c39e5d6e18c';
+
+// View contract used to fetch all reserves data (including market base currency data), and user reserves
+// Using Aave V3 Eth goerli address for demo
+const poolDataProviderContract = new UiPoolDataProvider({
+  uiPoolDataProviderAddress: '0x3De59b6901e7Ad0A19621D49C5b52cC9a4977e52', // Goerli GHO Market
+  provider,
+  chainId: ChainId.goerli,
+});
+const currentTimestamp =  Date.now();
+
+// View contract used to fetch all reserve incentives (APRs), and user incentives
+// Using Aave V3 Eth goerli address for demo
+const incentiveDataProviderContract = new UiIncentiveDataProvider({
+  uiIncentiveDataProviderAddress:
+    '0xF67B25977cEFf3563BF7F24A531D6CEAe6870a9d', // Goerli GHO Market
+  provider,
+  chainId: ChainId.goerli,
+});
+
+const ghoService = new GhoService({
+    provider,
+    uiGhoDataProviderAddress: '0xE914D574975a1Cd273388035Db4413dda788c0E5', // Goerli GHO Market
+});
+
+async function fetchContractData() {
+  // Object containing array of pool reserves and market base currency data
+  // { reservesArray, baseCurrencyData }
+  const reserves = await poolDataProviderContract.getReservesHumanized({
+    lendingPoolAddressProvider: '0x4dd5ab8Fb385F2e12aDe435ba7AFA812F1d364D0', // Goerli GHO Market
+  });
+
+  // Object containing array or users aave positions and active eMode category
+  // { userReserves, userEmodeCategoryId }
+  const userReserves = await poolDataProviderContract.getUserReservesHumanized({
+    lendingPoolAddressProvider: '0x4dd5ab8Fb385F2e12aDe435ba7AFA812F1d364D0', // Goerli GHO Market
+    user: currentAccount,
+  });
+
+  // Array of incentive tokens with price feed and emission APR
+  const reserveIncentives =
+    await incentiveDataProviderContract.getReservesIncentivesDataHumanized({
+      lendingPoolAddressProvider: '0x4dd5ab8Fb385F2e12aDe435ba7AFA812F1d364D0', // Goerli GHO Market
+    });
+
+  // Dictionary of claimable user incentives
+  const userIncentives =
+    await incentiveDataProviderContract.getUserReservesIncentivesDataHumanized({
+      lendingPoolAddressProvider: '0x4dd5ab8Fb385F2e12aDe435ba7AFA812F1d364D0', // Goerli GHO Market
+      user: currentAccount,
+    });
+
+   const ghoReserveData = await ghoService.getGhoReserveData();
+   const ghoUserData = await ghoService.getGhoUserData(currentAccount);
+
+  const formattedGhoReserveData = formatGhoReserveData({
+    ghoReserveData,
+  });
+  const formattedGhoUserData = formatGhoUserData({
+    ghoReserveData,
+    ghoUserData,
+    currentTimestamp,
+  });
+
+  const formattedPoolReserves = formatReservesAndIncentives({
+    reserves: reserves.reservesData,
+    currentTimestamp,
+    marketReferenceCurrencyDecimals: reserves.baseCurrencyData.marketReferenceCurrencyDecimals,
+    marketReferencePriceInUsd: reserves.baseCurrencyData.marketReferenceCurrencyPriceInUsd,
+    reserveIncentives: reserveIncentives,
+  })
+
+  const userSummary = formatUserSummaryAndIncentives({
+    currentTimestamp,
+    marketReferencePriceInUsd: reserves.baseCurrencyData.marketReferenceCurrencyPriceInUsd,
+    marketReferenceCurrencyDecimals: reserves.baseCurrencyData.marketReferenceCurrencyDecimals,
+    userReserves: userReserves.userReserves,
+    formattedReserves: formattedPoolReserves,
+    userEmodeCategoryId: userReserves.userEmodeCategoryId,
+    reserveIncentives: reserveIncentives,
+    userIncentives: userIncentives,
+  });
+
+let formattedUserSummary = userSummary;
+  // Factor discounted GHO interest into cumulative user fields
+  if (formattedGhoUserData.userDiscountedGhoInterest > 0) {
+    const userSummaryWithDiscount = formatUserSummaryWithDiscount({
+      userGhoDiscountedInterest: formattedGhoUserData.userDiscountedGhoInterest,
+      user,
+      marketReferenceCurrencyPriceUSD: Number(
+        formatUnits(reserves.baseCurrencyData.marketReferenceCurrencyPriceInUsd, USD_DECIMALS)
+      ),
+    });
+    formattedUserSummary = {
+      ...userSummary,
+      ...userSummaryWithDiscount,
+    };
+  }
+
+   console.log({ formattedGhoReserveData, formattedGhoUserData, formattedPoolReserves, formattedUserSummary });
+}
+
+fetchContractData();
 
 
 const handleRedirect = useCallback(async () => {
@@ -253,7 +376,7 @@ useEffect(() => {
         <title>Eth Tokto</title>
         <meta
           name="description"
-          content="auto liquidity for all your wallets and chains"
+          content="Universal liquidity for all your wallets and chains"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
@@ -261,12 +384,12 @@ useEffect(() => {
       <section className="container grid items-center gap-6 pt-6 pb-8 md:py-10">
         <div className="flex max-w-[980px] flex-col items-start gap-2">
           <h1 className="text-3xl font-extrabold leading-tight tracking-tighter sm:text-3xl md:text-5xl lg:text-6xl">
-            Beautifully designed components <br className="hidden sm:inline" />
-            built with Radix UI and Tailwind CSS.
+            antei: trustless liquid vaults <br className="hidden sm:inline" />
+            safely leverage your assets universally
           </h1>
           <p className="max-w-[700px] text-lg text-slate-700 dark:text-slate-400 sm:text-xl">
-            Accessible and customizable components that you can copy and paste
-            into your apps. Free. Open Source. And Next.js 13 Ready.
+            Antei vaults are controlled by a network of erc4332 BLS smart contract wallets, and for every vote-Escorewed or locked tocken you deposit, our network will mint a GHO token
+            , leveraging 1inch fusion.
           </p>
         </div>
         <div className="flex gap-4">
@@ -397,6 +520,7 @@ useEffect(() => {
           </>
         )}
     </Layout>
+    
   )
 }
 
